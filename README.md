@@ -1,4 +1,4 @@
-# Serde-querystring
+# Serde-teamspeak-querystring
 
 <br>
 An alternative teamspeak query string parser based on serde for rust.

@@ -1,10 +1,9 @@
 [package]
 authors = ["Pouya M. B. <pooyamb@gmail.com>", "KunoiSayami <cheungkwowk@gmail.com>"]
 categories = ["encoding", "web-programming"]
-description = "A query string deserializer based on serde"
-documentation = "https://docs.rs/serde-querystring"
+description = "A teamspeak query string deserializer based on serde"
 edition = "2018"
-keywords = ["serialization", "deserialization", "querystring", "serde"]
+keywords = ["serialization", "deserialization", "teamspeak", "querystring", "serde"]
 license = "MIT OR Apache-2.0"
 name = "serde-teamspeak-querystring"
 readme = "README.md"
