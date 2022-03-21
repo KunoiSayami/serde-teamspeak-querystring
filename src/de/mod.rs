@@ -19,7 +19,7 @@ impl<'de> KVParser<'de> {
     fn parse(self) -> Stash<'de> {
         let mut stash = Stash::new();
         for subslice in self.slice.split(|c| *c == b' ') {
-            if subslice.len() == 0 {
+            if subslice.is_empty() {
                 continue;
             }
 
