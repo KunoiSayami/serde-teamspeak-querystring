@@ -128,34 +128,20 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
 
         while let Some(v) = self.slice.get(index) {
             match v {
-                b'+' => {
+                b'\\' => {
                     self.scratch
                         .extend_from_slice(&self.slice[self.index..index]);
-                    self.scratch.push(b' ');
-
-                    index += 1;
-                    self.index = index;
-                }
-                b'%' => {
-                    // we saw percentage
-                    if self.slice.len() > index + 2 {
-                        match parse_char(&self.slice[(index + 1)..=(index + 2)]) {
-                            Some(b) => {
-                                self.scratch
-                                    .extend_from_slice(&self.slice[self.index..index]);
-                                self.scratch.push(b);
-
-                                index += 3;
-                                self.index = index;
-                            }
-                            None => {
-                                // If it wasn't valid, go to the next byte
-                                index += 1;
-                            }
+                    if self.slice.len() > index + 1 {
+                        match &self.slice[index + 1] {
+                            b'/' =>
+                                self.scratch.push(b'/'),
+                            b's' => self.scratch.push(b' '),
+                            b'\\' => self.scratch.push(b'\\'),
+                            &_ => {}
                         }
-                    } else {
-                        index += 1;
                     }
+                    index += 2;
+                    self.index = index;
                 }
                 _ => {
                     index += 1;
@@ -181,7 +167,7 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
         self.parse_str_bytes(|_, bytes| Ok(bytes))
     }
 
-    pub(crate) fn parse_number<'s, T>(&'s mut self) -> Result<T>
+    pub(crate) fn parse_number<T>(&mut self) -> Result<T>
     where
         T: FromLexical,
     {
@@ -237,52 +223,11 @@ impl<'de, 'a> de::Deserializer<'de> for ValueDeserializer<'de, 'a> {
     }
 
     #[inline]
-    fn deserialize_newtype_struct<V>(self, _: &str, visitor: V) -> Result<V::Value>
-    where
-        V: de::Visitor<'de>,
-    {
-        visitor.visit_newtype_struct(self)
-    }
-
-    #[inline]
     fn deserialize_bool<V>(mut self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
         visitor.visit_bool(self.parse_bool()?)
-    }
-
-    #[inline]
-    fn deserialize_enum<V>(
-        self,
-        _: &'static str,
-        _: &'static [&'static str],
-        visitor: V,
-    ) -> Result<V::Value>
-    where
-        V: de::Visitor<'de>,
-    {
-        visitor.visit_enum(self)
-    }
-
-    #[inline]
-    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: de::Visitor<'de>,
-    {
-        if self.slice.len() > 0 {
-            visitor.visit_some(self)
-        } else {
-            visitor.visit_none()
-        }
-    }
-
-    #[inline]
-    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: de::Visitor<'de>,
-    {
-        visitor.visit_unit()
     }
 
     /// We don't check the bytes to be valid utf8
@@ -303,6 +248,47 @@ impl<'de, 'a> de::Deserializer<'de> for ValueDeserializer<'de, 'a> {
         V: de::Visitor<'de>,
     {
         self.deserialize_bytes(visitor)
+    }
+
+    #[inline]
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        if self.slice.len() > 0 {
+            visitor.visit_some(self)
+        } else {
+            visitor.visit_none()
+        }
+    }
+
+    #[inline]
+    fn deserialize_newtype_struct<V>(self, _: &str, visitor: V) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        visitor.visit_newtype_struct(self)
+    }
+
+    #[inline]
+    fn deserialize_enum<V>(
+        self,
+        _: &'static str,
+        _: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        visitor.visit_enum(self)
+    }
+
+    #[inline]
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        visitor.visit_unit()
     }
 
     forward_to_deserialize_any! {
