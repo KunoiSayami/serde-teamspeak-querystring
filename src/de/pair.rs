@@ -38,7 +38,7 @@ impl<'de> Value<'de> {
     }
 
     pub fn to_deserializer<'a>(&self, scrach: &'a mut Vec<u8>) -> ValueDeserializer<'de, 'a> {
-        ValueDeserializer::new(&self.slice.unwrap_or_default(), scrach)
+        ValueDeserializer::new(self.slice.unwrap_or_default(), scrach)
     }
 }
 
@@ -158,7 +158,7 @@ impl<'de, 'a> de::Deserializer<'de> for PairVecDeserializer<'de, 'a> {
         let last_item = self.vec.force_pop();
         last_item
             .value_ref()
-            .to_deserializer(&mut self.scratch)
+            .to_deserializer(self.scratch)
             .deserialize_option(visitor)
             .map_err(|e| self.set_error_key(e, &last_item))
     }
@@ -171,7 +171,7 @@ impl<'de, 'a> de::Deserializer<'de> for PairVecDeserializer<'de, 'a> {
         let last_item = self.vec.force_pop();
         last_item
             .value_ref()
-            .to_deserializer(&mut self.scratch)
+            .to_deserializer(self.scratch)
             .deserialize_option(visitor)
             .map_err(|e| self.set_error_key(e, &last_item))
     }
@@ -227,7 +227,7 @@ impl<'de, 'a> de::Deserializer<'de> for PairVecDeserializer<'de, 'a> {
     {
         let last_item = self.vec.force_pop();
         visitor
-            .visit_enum(last_item.value_ref().to_deserializer(&mut self.scratch))
+            .visit_enum(last_item.value_ref().to_deserializer(self.scratch))
             .map_err(|e| self.set_error_key(e, &last_item))
     }
 
@@ -264,7 +264,7 @@ impl<'de, 'a> de::SeqAccess<'de> for PairVecDeserializer<'de, 'a> {
         T: de::DeserializeSeed<'de>,
     {
         if let Some(p) = self.vec.pop_back() {
-            seed.deserialize(p.value_ref().to_deserializer(&mut self.scratch))
+            seed.deserialize(p.value_ref().to_deserializer(self.scratch))
                 .map(Some)
         } else {
             Ok(None)

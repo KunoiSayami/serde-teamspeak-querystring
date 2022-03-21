@@ -66,9 +66,9 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
         let err_string = error.to_string();
         if err_string.starts_with("lexical parse error") {
             // The actual message is between the first two single quotations
-            let the_message = err_string.split('\'');
+            let mut the_message = err_string.split('\'');
 
-            if let Some(the_message) = the_message.skip(1).next() {
+            if let Some(the_message) = the_message.nth(1) {
                 if let Some(index) = error.index() {
                     return Error::new(ErrorKind::InvalidNumber)
                         .message(the_message.to_owned())
@@ -255,7 +255,7 @@ impl<'de, 'a> de::Deserializer<'de> for ValueDeserializer<'de, 'a> {
     where
         V: de::Visitor<'de>,
     {
-        if self.slice.len() > 0 {
+        if !self.slice.is_empty() {
             visitor.visit_some(self)
         } else {
             visitor.visit_none()
