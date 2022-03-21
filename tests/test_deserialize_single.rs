@@ -1,7 +1,7 @@
 //! These tests are common between different deserialization methods
 
 use serde::Deserialize;
-use serde_querystring::{from_str, ErrorKind};
+use serde_teamspeak_querystring::{from_str, ErrorKind};
 
 /// It is a helper struct we use to test primitive types
 /// as we don't support anything beside maps/structs at the root level
@@ -129,7 +129,7 @@ fn deserialize_strings() {
 fn deserialize_option() {
     assert_eq!(from_str("value=1337"), Ok(p!(Some(1337), Option<u32>)));
     assert_eq!(from_str("value="), Ok(p!(None, Option<u32>)));
-    assert_eq!(from_str("value=1337&value="), Ok(p!(None, Option<u32>)));
+    assert_eq!(from_str("value=1337 value="), Ok(p!(None, Option<u32>)));
 }
 
 #[test]
@@ -142,9 +142,9 @@ fn deserialize_new_type() {
 
 #[test]
 fn deserialize_extra_ampersands() {
-    assert_eq!(from_str("&&value=bar"), Ok(p!("bar")));
-    assert_eq!(from_str("value=bar&&"), Ok(p!("bar")));
-    assert_eq!(from_str("value=bar&&&value=baz"), Ok(p!("baz")));
+    assert_eq!(from_str("  value=bar"), Ok(p!("bar")));
+    assert_eq!(from_str("value=bar  "), Ok(p!("bar")));
+    assert_eq!(from_str("value=bar   value=baz"), Ok(p!("baz")));
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn deserialize_invalid_number() {
 
     assert!(from_str::<Primitive<f64>>("value=number").is_err());
     assert!(from_str::<Primitive<f64>>("value=-1.5num").is_err());
-    assert!(from_str::<Primitive<f64>>("value=&").is_err());
+    assert!(from_str::<Primitive<f64>>("value= ").is_err());
     assert!(from_str::<Primitive<f64>>("value=1.0a1.0").is_err());
 }
 
@@ -251,7 +251,7 @@ fn deserialize_invalid_precent_decoding() {
 #[test]
 fn deserialize_error_test() {
     assert_eq!(
-        from_str::<Primitive<(i32, i32)>>("value=12&value=13&value=14")
+        from_str::<Primitive<(i32, i32)>>("value=12 value=13 value=14")
             .unwrap_err()
             .kind,
         ErrorKind::InvalidLength
@@ -260,7 +260,7 @@ fn deserialize_error_test() {
     #[derive(Debug, Deserialize)]
     struct Tuple(i32, i32);
     assert_eq!(
-        from_str::<Primitive<Tuple>>("value=12&value=13&value=14")
+        from_str::<Primitive<Tuple>>("value=12 value=13 value=14")
             .unwrap_err()
             .kind,
         ErrorKind::InvalidLength

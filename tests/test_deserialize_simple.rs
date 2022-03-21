@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use serde::Deserialize;
-use serde_querystring::from_str;
+use serde_teamspeak_querystring::from_str;
 
 /// It is a helper struct we use to test primitive types
 /// as we don't support anything beside maps/structs at the root level
@@ -31,17 +31,17 @@ macro_rules! p {
 fn deserialize_sequence() {
     // vector
     assert_eq!(
-        from_str("value=1&value=3&value=1337"),
+        from_str("value=1 value=3 value=1337"),
         Ok(p!(vec![1, 3, 1337]))
     );
 
     // array
-    assert_eq!(from_str("value=1&value=3&value=1337"), Ok(p!([1, 3, 1337])));
+    assert_eq!(from_str("value=1 value=3 value=1337"), Ok(p!([1, 3, 1337])));
 
     // tuple
-    assert_eq!(from_str("value=1&value=3&value=1337"), Ok(p!((1, 3, 1337))));
+    assert_eq!(from_str("value=1 value=3 value=1337"), Ok(p!((1, 3, 1337))));
     assert_eq!(
-        from_str("value=1&value=3&value=1337"),
+        from_str("value=1 value=3 value=1337"),
         Ok(p!((true, "3", 1337)))
     );
 }
@@ -60,7 +60,7 @@ fn deserialize_unit_variants() {
     let mut map = HashMap::new();
     map.insert(Side::God, "winner");
     map.insert(Side::Right, "looser");
-    assert_eq!(from_str("God=winner&Right=looser"), Ok(map));
+    assert_eq!(from_str("God=winner Right=looser"), Ok(map));
 
     // unit enums as map values
     #[derive(Debug, Deserialize, PartialEq)]
@@ -69,7 +69,7 @@ fn deserialize_unit_variants() {
         winner: Side,
     }
     assert_eq!(
-        from_str::<A>("looser=Left&winner=God"),
+        from_str::<A>("looser=Left winner=God"),
         Ok(A {
             looser: Side::Left,
             winner: Side::God
@@ -84,7 +84,7 @@ fn deserialize_unit_variants() {
 
     // unit enums in sequence
     assert_eq!(
-        from_str("value=God&value=Left&value=Right"),
+        from_str("value=God value=Left value=Right"),
         Ok(VecEnum {
             value: vec![Side::God, Side::Left, Side::Right]
         })
@@ -94,14 +94,14 @@ fn deserialize_unit_variants() {
 #[test]
 fn deserialize_invalid_sequence() {
     // array length
-    assert!(from_str::<Primitive<[usize; 3]>>("value=1&value=3&value=1337&value=999").is_err());
+    assert!(from_str::<Primitive<[usize; 3]>>("value=1 value=3 value=1337 value=999").is_err());
 
     // tuple length
     assert!(
-        from_str::<Primitive<(usize, usize, usize)>>("value=1&value=3&value=1337&value=999")
+        from_str::<Primitive<(usize, usize, usize)>>("value=1 value=3 value=1337 value=999")
             .is_err()
     );
 
     // tuple value types
-    assert!(from_str::<Primitive<(&str, usize, &str)>>("value=foo&value=bar&value=baz").is_err());
+    assert!(from_str::<Primitive<(&str, usize, &str)>>("value=foo value=bar value=baz").is_err());
 }
