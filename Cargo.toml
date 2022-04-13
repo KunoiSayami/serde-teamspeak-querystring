@@ -11,9 +11,9 @@ repository = "https://github.com/KunoiSayami/serde-teamspeak-querystring/"
 version = "0.1.2"
 
 [dependencies]
-lexical = {version = "^6.0", features = ["std", "parse-integers", "parse-floats"], default-features = false}
-serde = {version = "1.0.126"}
+lexical = { version = "^6.0", features = ["std", "parse-integers", "parse-floats"], default-features = false }
+serde = { version = "1.0.126" }
 
 [dev-dependencies]
 criterion = "0.3"
-serde = {version = "1.0.126", features = ["derive"]}
+serde = { version = "1.0.126", features = ["derive"] }
