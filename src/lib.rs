@@ -1,5 +1,5 @@
-//! # Serde-querystring
-//! serde-querystring is a deserializer for query strings.
+//! # Serde-teamspeak-querystring
+//! serde-teamspeak-querystring is a deserializer for teamspeak query strings.
 //!
 //! To see what's supported and what's not, please take a look the tests in the main repo.
 //!
