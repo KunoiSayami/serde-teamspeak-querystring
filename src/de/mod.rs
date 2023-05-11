@@ -49,3 +49,9 @@ where
     let res = serde::de::Deserialize::deserialize(de)?;
     Ok(res)
 }
+
+pub fn escape(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace(' ', "\\s")
+        .replace('/', "\\/")
+}

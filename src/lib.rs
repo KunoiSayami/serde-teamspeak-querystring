@@ -7,5 +7,5 @@
 mod de;
 mod error;
 
-pub use de::{from_bytes, from_str};
+pub use de::{from_bytes, from_str, escape};
 pub use error::{Error, ErrorKind};
