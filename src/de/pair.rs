@@ -176,6 +176,17 @@ impl<'de, 'a> de::Deserializer<'de> for PairVecDeserializer<'de, 'a> {
             .map_err(|e| self.set_error_key(e, &last_item))
     }
 
+    #[inline]
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        // We can't do this in the single value level
+        // because we can't tell if there is nothing provided at all, at that level
+
+        visitor.visit_unit()
+    }
+
     fn deserialize_newtype_struct<V>(self, _: &str, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
@@ -229,17 +240,6 @@ impl<'de, 'a> de::Deserializer<'de> for PairVecDeserializer<'de, 'a> {
         visitor
             .visit_enum(last_item.value_ref().to_deserializer(self.scratch))
             .map_err(|e| self.set_error_key(e, &last_item))
-    }
-
-    #[inline]
-    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: de::Visitor<'de>,
-    {
-        // We can't do this in the single value level
-        // because we can't tell if there is nothing provided at all, at that level
-
-        visitor.visit_unit()
     }
 
     forward_to_deserialize_single! {
