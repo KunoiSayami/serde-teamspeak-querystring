@@ -262,8 +262,9 @@ fn deserialize_error_test() {
         ErrorKind::InvalidLength
     );
 
+    // Changed i32 to () according by rustc
     #[derive(Debug, Deserialize)]
-    struct Tuple(i32, i32);
+    struct Tuple((), ());
     assert_eq!(
         from_str::<Primitive<Tuple>>("value=12 value=13 value=14")
             .unwrap_err()
@@ -290,8 +291,8 @@ fn deserialize_error_test() {
 
     #[derive(Debug, Deserialize)]
     enum ValueEnum {
-        A(i32, i32),
-        B(i32),
+        A((), ()),
+        B(()),
         C {},
     }
 

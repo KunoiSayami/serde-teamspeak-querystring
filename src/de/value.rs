@@ -1,6 +1,5 @@
 use std::str::{self, Utf8Error};
 
-use lexical::FromLexical;
 use serde::{
     de::{self, IntoDeserializer},
     forward_to_deserialize_any,
@@ -34,14 +33,14 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
     where
         V: de::Visitor<'de>,
     {
-        visitor.visit_i64(self.parse_number()?)
+        visitor.visit_i64(self.parse_integer()?)
     }
 
     fn deserialize_unsigned<V>(mut self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        visitor.visit_u64(self.parse_number()?)
+        visitor.visit_u64(self.parse_unsigner()?)
     }
 
     fn deserialize_float<V>(mut self, visitor: V) -> Result<V::Value>
@@ -60,28 +59,16 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
     }
 
     #[cold]
-    fn invalid_number(&self, error: lexical::Error) -> Error {
-        // Lexical doesn't provide a method to see if it's a parsing error
-        // It may be better to just use enum matching for the error, but it's harder
-        let err_string = error.to_string();
-        if err_string.starts_with("lexical parse error") {
-            // The actual message is between the first two single quotations
-            let mut the_message = err_string.split('\'');
+    fn invalid_number_overflow(&self) -> Error {
+        Error::new(ErrorKind::InvalidNumber)
+            .message(String::from("integer number overflow"))
+            .value(self.slice)
+    }
 
-            if let Some(the_message) = the_message.nth(1) {
-                if let Some(index) = error.index() {
-                    return Error::new(ErrorKind::InvalidNumber)
-                        .message(the_message.to_owned())
-                        .value(self.slice)
-                        .index(self.index_before_decoding(*index));
-                }
-            }
-        }
-
-        // We shouldn't reach here unless lexical change their error message
-        // Or some configs change, etc
-        Error::new(ErrorKind::InvalidEncoding)
-            .message(err_string)
+    #[cold]
+    fn invalid_number(&self) -> Error {
+        Error::new(ErrorKind::InvalidNumber)
+            .message(String::from("invalid ident found for integer number"))
             .value(self.slice)
     }
 
@@ -89,7 +76,7 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
     fn invalid_float<E: ToString>(&self, error: E) -> Error {
         Error::new(ErrorKind::InvalidEncoding)
             .message(error.to_string())
-            .value(&self.slice)
+            .value(self.slice)
     }
 
     #[cold]
@@ -173,15 +160,30 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
         self.parse_str_bytes(|_, bytes| Ok(bytes))
     }
 
-    pub(crate) fn parse_number<T>(&mut self) -> Result<T>
-    where
-        T: FromLexical,
-    {
+    pub(crate) fn parse_integer<T: atoi::FromRadix10SignedChecked>(&mut self) -> Result<T> {
         let c = match self.parse_bytes()? {
             Reference::Borrowed(b) => b,
             Reference::Copied(c) => c,
         };
-        lexical::parse(c).map_err(|e| self.invalid_number(e))
+        match T::from_radix_10_signed_checked(c) {
+            (_, 0) => Err(self.invalid_number()),
+            (_, index) if index != c.len() => Err(self.invalid_number()),
+            (Some(n), _) => Ok(n),
+            (None, _) => Err(self.invalid_number_overflow()),
+        }
+    }
+
+    pub(crate) fn parse_unsigner<T: atoi::FromRadix10Checked>(&mut self) -> Result<T> {
+        let c = match self.parse_bytes()? {
+            Reference::Borrowed(b) => b,
+            Reference::Copied(c) => c,
+        };
+        match T::from_radix_10_checked(c) {
+            (_, 0) => Err(self.invalid_number()),
+            (_, index) if index != c.len() => Err(self.invalid_number()),
+            (Some(n), _) => Ok(n),
+            (None, _) => Err(self.invalid_number_overflow()),
+        }
     }
 
     pub(crate) fn parse_float<T>(&mut self) -> Result<T>
