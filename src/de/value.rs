@@ -48,7 +48,7 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
     where
         V: de::Visitor<'de>,
     {
-        visitor.visit_f64(self.parse_number()?)
+        visitor.visit_f64(self.parse_float()?)
     }
 
     #[cold]
@@ -83,6 +83,13 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
         Error::new(ErrorKind::InvalidEncoding)
             .message(err_string)
             .value(self.slice)
+    }
+
+    #[cold]
+    fn invalid_float<E: ToString>(&self, error: E) -> Error {
+        Error::new(ErrorKind::InvalidEncoding)
+            .message(error.to_string())
+            .value(&self.slice)
     }
 
     #[cold]
@@ -133,8 +140,7 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
                         .extend_from_slice(&self.slice[self.index..index]);
                     if self.slice.len() > index + 1 {
                         match &self.slice[index + 1] {
-                            b'/' =>
-                                self.scratch.push(b'/'),
+                            b'/' => self.scratch.push(b'/'),
                             b's' => self.scratch.push(b' '),
                             b'\\' => self.scratch.push(b'\\'),
                             &_ => {}
@@ -176,6 +182,22 @@ impl<'de, 'a> ValueDeserializer<'de, 'a> {
             Reference::Copied(c) => c,
         };
         lexical::parse(c).map_err(|e| self.invalid_number(e))
+    }
+
+    pub(crate) fn parse_float<T>(&mut self) -> Result<T>
+    where
+        T: std::str::FromStr,
+        <T as std::str::FromStr>::Err: std::fmt::Display,
+    {
+        let c = match self.parse_bytes()? {
+            Reference::Borrowed(b) => b,
+            Reference::Copied(c) => c,
+        };
+
+        match std::str::from_utf8(c) {
+            Ok(s) => T::from_str(s).map_err(|e| self.invalid_float(e)),
+            Err(e) => Err(self.invalid_float(e)),
+        }
     }
 
     pub(crate) fn parse_bool(&mut self) -> Result<bool> {
